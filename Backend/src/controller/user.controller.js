@@ -6,9 +6,7 @@ const senData = require("../config/mail");
 const { hash } = require("../utils/hashpassword");
 const { compare } = require("../utils/compare");
 const { generateToeken } = require("../utils/GenerateToken");
-const accountsid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioClient = new twilio(accountsid, authToken);
+const { twilioClient, sendSMS } = require("../utils/twilio");
 const bcrypt = require("bcryptjs");
 const OTP_EXPIRATION_TIME = 30 * 1000; // 30 seconds in milliseconds
 const cloudinary = require("../utils/cloudinary");
@@ -341,11 +339,15 @@ exports.SendOtp = async (req, res) => {
       }
       const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
       // Send OTP via SMS
-      await twilioClient.messages.create({
-        body: `Your forgot password OTP is ${otp}`,
-        to: formattedPhoneNumber,
-        from: process.env.TWILIO_PHONE_NUMBER,
-      });
+      if (twilioClient) {
+        await twilioClient.messages.create({
+          body: `Your forgot password OTP is ${otp}`,
+          to: formattedPhoneNumber,
+          from: process.env.TWILIO_PHONE_NUMBER,
+        });
+      } else {
+        console.warn("Twilio client not initialized. Skipping SMS.");
+      }
       return res.status(200).json({
         success: true,
         message: "OTP sent successfully to phone number",

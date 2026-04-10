@@ -6,9 +6,7 @@ const { hash } = require("../utils/hashpassword");
 const senData = require("../config/mail");
 const Guard = require("../models/SecurityGuard.model");
 const { ForgotFormatSecurity } = require("../utils/securityUi");
-const accountsid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioClient = new twilio(accountsid, authToken);
+const { twilioClient } = require("../utils/twilio");
 // add security guard
 exports.CreateSecurityGuard = async (req, res) => {
    try {
@@ -131,12 +129,16 @@ exports.CreateSecurityGuard = async (req, res) => {
          } else {
              console.log("Sending SMS to:", MailOrPhone);
              // Send SMS via Twilio
-             await twilioClient.messages.create({
-                 body: `You have successfully registered as a security. Your login details are as follows UserName ${MailOrPhone} & Password is ${password}\n\nPlease keep this information secure.\n\nBest Regards,\nManagement`,
-                 to: MailOrPhone,
-                 from: process.env.TWILIO_PHONE_NUMBER,
-             });
-             console.log("SMS sent successfully");
+             if (twilioClient) {
+                 await twilioClient.messages.create({
+                     body: `You have successfully registered as a security. Your login details are as follows UserName ${MailOrPhone} & Password is ${password}\n\nPlease keep this information secure.\n\nBest Regards,\nManagement`,
+                     to: MailOrPhone,
+                     from: process.env.TWILIO_PHONE_NUMBER,
+                 });
+                 console.log("SMS sent successfully");
+             } else {
+                 console.warn("Twilio client not initialized. Skipping SMS.");
+             }
          }
      } catch (notificationError) {
          // Log notification error but don't fail the request
